@@ -2,7 +2,7 @@
   "name": "Freelance Rate Calculator",
   "short_name": "Rate Calc",
   "description": "Freelance rate calculator with EUR, USD, INR and pinned scenarios",
-  "start_url": "/",
+  "start_url": "./",
   "display": "standalone",
   "background_color": "#f5f3ee",
   "theme_color": "#2a2925",
