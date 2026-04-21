@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rate Calculator</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#2a2925">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Rate Calc">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #f5f3ee;
+    --surface: #ffffff;
+    --border: #e0ddd6;
+    --text: #1a1916;
+    --muted: #7a7870;
+    --accent: #2a2925;
+    --eur: #1a4a8a;
+    --usd: #1a6b3a;
+    --inr: #8a3a1a;
+    --tag-bg: #f0ede6;
+  }
+  body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; padding: 2rem 1rem; }
+  .container { max-width: 780px; margin: 0 auto; }
+  header { margin-bottom: 2.5rem; }
+  h1 { font-family: 'DM Mono', monospace; font-weight: 300; font-size: 1.1rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin-bottom: 0.25rem; }
+  .fx-badge { display: inline-flex; align-items: center; gap: 6px; background: var(--tag-bg); border: 1px solid var(--border); border-radius: 4px; padding: 4px 10px; font-family: 'DM Mono', monospace; font-size: 0.72rem; color: var(--muted); margin-top: 0.75rem; }
+  .dot { width: 6px; height: 6px; border-radius: 50%; background: #3aad6a; display: inline-block; }
+  .dot.loading { background: #f0a830; animation: pulse 1s infinite; }
+  .dot.error { background: #e04a3a; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+  .inputs { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; }
+  .input-group label { display: block; font-size: 0.72rem; font-family: 'DM Mono', monospace; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin-bottom: 6px; }
+  .input-group input { width: 100%; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 8px 12px; font-family: 'DM Mono', monospace; font-size: 1rem; color: var(--text); outline: none; transition: border-color 0.15s; }
+  .input-group input:focus { border-color: var(--accent); }
+  .section-title { font-family: 'DM Mono', monospace; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin-bottom: 0.75rem; }
+  .cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 1.25rem; }
+  @media (max-width: 560px) { .cards { grid-template-columns: repeat(2, 1fr); } }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 1rem; }
+  .card-period { font-size: 0.68rem; font-family: 'DM Mono', monospace; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin-bottom: 8px; }
+  .card-amount { font-family: 'DM Mono', monospace; font-weight: 500; line-height: 1.2; }
+  .eur { font-size: 1.15rem; color: var(--eur); }
+  .usd { font-size: 0.9rem; color: var(--usd); margin-top: 4px; }
+  .inr { font-size: 0.9rem; color: var(--inr); margin-top: 2px; }
+  .pin-row { display: flex; align-items: center; gap: 10px; margin-bottom: 2rem; }
+  .label-input { flex: 1; background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 8px 12px; font-family: 'DM Sans', sans-serif; font-size: 0.9rem; color: var(--text); outline: none; transition: border-color 0.15s; }
+  .label-input:focus { border-color: var(--accent); }
+  .pin-btn { background: var(--accent); color: #fff; border: none; border-radius: 6px; padding: 9px 18px; font-family: 'DM Mono', monospace; font-size: 0.78rem; letter-spacing: 0.04em; cursor: pointer; white-space: nowrap; transition: opacity 0.15s; }
+  .pin-btn:hover { opacity: 0.82; }
+  .pinned-section { margin-top: 0.5rem; }
+  .pinned-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem; }
+  .clear-btn { font-family: 'DM Mono', monospace; font-size: 0.72rem; color: var(--muted); background: none; border: 1px solid var(--border); border-radius: 4px; padding: 3px 10px; cursor: pointer; }
+  .clear-btn:hover { color: var(--text); }
+  .pinned-table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-family: 'DM Mono', monospace; font-size: 0.8rem; }
+  thead tr { border-bottom: 1px solid var(--border); }
+  th { padding: 8px 12px; text-align: left; font-weight: 400; color: var(--muted); font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.06em; white-space: nowrap; }
+  td { padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: top; white-space: nowrap; }
+  tr:last-child td { border-bottom: none; }
+  .td-label { font-family: 'DM Sans', sans-serif; color: var(--text); font-size: 0.85rem; min-width: 140px; }
+  .td-rate { color: var(--eur); font-weight: 500; }
+  .td-eur { color: var(--eur); display: block; }
+  .td-usd { color: var(--usd); display: block; font-size: 0.75rem; margin-top: 2px; }
+  .td-inr { color: var(--inr); display: block; font-size: 0.75rem; margin-top: 1px; }
+  .remove-btn { background: none; border: none; cursor: pointer; color: var(--muted); font-size: 1.1rem; padding: 0 4px; line-height: 1; }
+  .remove-btn:hover { color: #c0392b; }
+  .pinned-row { animation: fadeIn 0.2s ease; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+  .currency-key { display: flex; gap: 1.5rem; margin-top: 1.5rem; flex-wrap: wrap; }
+  .key-item { display: flex; align-items: center; gap: 6px; font-size: 0.75rem; font-family: 'DM Mono', monospace; color: var(--muted); }
+  .key-dot { width: 8px; height: 8px; border-radius: 2px; }
+  .empty-state { font-family: 'DM Mono', monospace; font-size: 0.8rem; color: var(--muted); padding: 1.5rem; text-align: center; background: var(--surface); border: 1px dashed var(--border); border-radius: 10px; }
+  .rate-input-wrap { display: flex; }
+  .rate-input-wrap input { border-radius: 6px 0 0 6px; border-right: none; flex: 1; min-width: 0; }
+  .rate-input-wrap input:focus { border-color: var(--accent); }
+  .currency-select { background: var(--tag-bg); border: 1px solid var(--border); border-radius: 0 6px 6px 0; padding: 0 8px; font-family: 'DM Mono', monospace; font-size: 0.78rem; color: var(--muted); cursor: pointer; outline: none; appearance: none; -webkit-appearance: none; min-width: 48px; text-align: center; }
+  .currency-select:focus { border-color: var(--accent); }
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <h1>Freelance Rate Calculator</h1>
+    <div class="fx-badge">
+      <span class="dot loading" id="dot"></span>
+      <span id="fx-status">Fetching live rates…</span>
+    </div>
+  </header>
+
+  <div class="inputs">
+    <div class="input-group">
+      <label id="rate-label">Hourly rate</label>
+      <div class="rate-input-wrap">
+        <input type="number" id="rate" value="25" min="1" step="1" oninput="calc()">
+        <select class="currency-select" id="rate-currency" onchange="onCurrencyChange()">
+          <option value="EUR">€ EUR</option>
+          <option value="USD">$ USD</option>
+          <option value="INR">₹ INR</option>
+        </select>
+      </div>
+    </div>
+    <div class="input-group">
+      <label>Hours / day</label>
+      <input type="number" id="hpd" value="8" min="1" max="24" step="1" oninput="calc()">
+    </div>
+    <div class="input-group">
+      <label>Days / week</label>
+      <input type="number" id="dpw" value="5" min="1" max="7" step="1" oninput="calc()">
+    </div>
+    <div class="input-group">
+      <label>Weeks / month</label>
+      <input type="number" id="wpm" value="4" min="1" max="5" step="0.5" oninput="calc()">
+    </div>
+  </div>
+
+  <p class="section-title">Earnings breakdown</p>
+  <div class="cards">
+    <div class="card">
+      <div class="card-period">Hourly</div>
+      <div class="card-amount eur" id="e-hr">—</div>
+      <div class="card-amount usd" id="u-hr"></div>
+      <div class="card-amount inr" id="i-hr"></div>
+    </div>
+    <div class="card">
+      <div class="card-period">Daily</div>
+      <div class="card-amount eur" id="e-day">—</div>
+      <div class="card-amount usd" id="u-day"></div>
+      <div class="card-amount inr" id="i-day"></div>
+    </div>
+    <div class="card">
+      <div class="card-period">Weekly</div>
+      <div class="card-amount eur" id="e-wk">—</div>
+      <div class="card-amount usd" id="u-wk"></div>
+      <div class="card-amount inr" id="i-wk"></div>
+    </div>
+    <div class="card">
+      <div class="card-period">Monthly</div>
+      <div class="card-amount eur" id="e-mo">—</div>
+      <div class="card-amount usd" id="u-mo"></div>
+      <div class="card-amount inr" id="i-mo"></div>
+    </div>
+  </div>
+
+  <div class="pin-row">
+    <input class="label-input" type="text" id="pin-label" placeholder="Label this scenario (e.g. Client A – half time)" maxlength="50">
+    <button class="pin-btn" onclick="pinRate()">+ Pin this</button>
+  </div>
+
+  <div class="pinned-section">
+    <div class="pinned-header">
+      <p class="section-title" style="margin:0;">Pinned comparisons</p>
+      <button class="clear-btn" onclick="clearAll()">Clear all</button>
+    </div>
+    <div class="empty-state" id="empty-state">No scenarios pinned yet — set a rate above and hit + Pin this</div>
+    <div class="pinned-table-wrap" id="table-wrap" style="display:none;">
+      <table>
+        <thead>
+          <tr>
+            <th>Label</th>
+            <th>€/hr</th>
+            <th>Hrs</th>
+            <th>Days</th>
+            <th style="border-left:1px solid var(--border)">Daily</th>
+            <th>Weekly</th>
+            <th>Monthly</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="pinned-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="currency-key">
+    <div class="key-item"><div class="key-dot" style="background:var(--eur)"></div> EUR €</div>
+    <div class="key-item"><div class="key-dot" style="background:var(--usd)"></div> USD $</div>
+    <div class="key-item"><div class="key-dot" style="background:var(--inr)"></div> INR ₹</div>
+  </div>
+</div>
+
+<script>
+let usdRate = null, inrRate = null, pinned = [];
+
+async function fetchRates() {
+  try {
+    const res = await fetch('https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/eur.json');
+    const data = await res.json();
+    usdRate = data.eur.usd;
+    inrRate = data.eur.inr;
+    document.getElementById('dot').className = 'dot';
+    const d = new Date(data.date);
+    document.getElementById('fx-status').textContent = `Live rates · ${d.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})} · 1 EUR = $${usdRate.toFixed(3)} / ₹${Math.round(inrRate)}`;
+    calc();
+  } catch(e) {
+    document.getElementById('dot').className = 'dot error';
+    document.getElementById('fx-status').textContent = 'Could not fetch rates — EUR only';
+    calc();
+  }
+}
+
+function n(v) { return isNaN(v) ? 0 : v; }
+function fE(v) { return '€' + Math.round(v).toLocaleString('de-DE'); }
+function fU(v) { return usdRate ? '$' + Math.round(v * usdRate).toLocaleString('en-US') : ''; }
+function fI(v) { return inrRate ? '₹' + Math.round(v * inrRate).toLocaleString('en-IN') : ''; }
+
+function toEUR(val, currency) {
+  if (currency === 'USD') return usdRate ? val / usdRate : val;
+  if (currency === 'INR') return inrRate ? val / inrRate : val;
+  return val;
+}
+
+function onCurrencyChange() {
+  const cur = document.getElementById('rate-currency').value;
+  const input = document.getElementById('rate');
+  const prev = parseFloat(input.dataset.eur || input.value) || 0;
+  if (cur === 'USD' && usdRate) input.value = Math.round(prev * usdRate);
+  else if (cur === 'INR' && inrRate) input.value = Math.round(prev * inrRate);
+  else input.value = Math.round(prev);
+  calc();
+}
+
+function getInputs() {
+  const raw = n(parseFloat(document.getElementById('rate').value));
+  const cur = document.getElementById('rate-currency').value;
+  const r = toEUR(raw, cur);
+  return {
+    r,
+    hpd: n(parseFloat(document.getElementById('hpd').value)),
+    dpw: n(parseFloat(document.getElementById('dpw').value)),
+    wpm: n(parseFloat(document.getElementById('wpm').value)),
+  };
+}
+
+function calc() {
+  const { r, hpd, dpw, wpm } = getInputs();
+  document.getElementById('rate').dataset.eur = r;
+  const day = r*hpd, week = day*dpw, month = week*wpm;
+  const pairs = [['hr',r],['day',day],['wk',week],['mo',month]];
+  pairs.forEach(([id, v]) => {
+    document.getElementById('e-'+id).textContent = fE(v);
+    document.getElementById('u-'+id).textContent = fU(v);
+    document.getElementById('i-'+id).textContent = fI(v);
+  });
+}
+
+function cell(v) {
+  return `<span class="td-eur">${fE(v)}</span>${usdRate?'<span class="td-usd">'+fU(v)+'</span>':''}${inrRate?'<span class="td-inr">'+fI(v)+'</span>':''}`;
+}
+
+function pinRate() {
+  const { r, hpd, dpw, wpm } = getInputs();
+  const raw = document.getElementById('pin-label').value.trim();
+  const label = raw || `€${r}/hr · ${hpd}h · ${dpw}d/wk`;
+  const day = r*hpd, week = day*dpw, month = week*wpm;
+  pinned.push({ id: Date.now(), label, r, hpd, dpw, wpm, day, week, month });
+  document.getElementById('pin-label').value = '';
+  renderPinned();
+}
+
+function removePin(id) {
+  pinned = pinned.filter(p => p.id !== id);
+  renderPinned();
+}
+
+function clearAll() {
+  pinned = [];
+  renderPinned();
+}
+
+function renderPinned() {
+  const empty = document.getElementById('empty-state');
+  const wrap = document.getElementById('table-wrap');
+  if (!pinned.length) { empty.style.display = 'block'; wrap.style.display = 'none'; return; }
+  empty.style.display = 'none';
+  wrap.style.display = 'block';
+  document.getElementById('pinned-tbody').innerHTML = pinned.map(p => `
+    <tr class="pinned-row">
+      <td class="td-label">${p.label}</td>
+      <td class="td-rate">€${p.r}</td>
+      <td style="color:var(--muted)">${p.hpd}h</td>
+      <td style="color:var(--muted)">${p.dpw}d</td>
+      <td style="border-left:1px solid var(--border)">${cell(p.day)}</td>
+      <td>${cell(p.week)}</td>
+      <td>${cell(p.month)}</td>
+      <td><button class="remove-btn" onclick="removePin(${p.id})">×</button></td>
+    </tr>
+  `).join('');
+}
+
+fetchRates();
+</script>
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js'));
+}
+</script>
+</body>
+</html>
